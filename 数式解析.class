@@ -1,0 +1,151 @@
+class Node{
+    public String token;
+    public Node next;
+
+    public Node(String token){
+        this.token = token;
+        this.next = null;
+    }
+}
+
+class Stack{
+    public Node head;
+
+    public Stack(){
+        this.head = null;
+    }
+
+    public void push(String token){
+        Node newNode = new Node(token);
+        newNode.next = this.head;
+        this.head = newNode;
+    }
+
+    public String peek(){
+        if(this.head == null) return null;
+        else return this.head.token;
+    }
+
+    public String pop(){
+        if(this.head == null) return null;
+        else{
+            Node temp = this.head;
+            this.head = this.head.next;
+            temp.next = null;
+            return temp.token;
+        }
+    }
+
+    public void printContents(){
+        Node iterator = this.head;
+        String str = "";
+        while(iterator != null){
+            str = iterator.token + " " + str;
+            iterator = iterator.next;
+        }
+        System.out.println("[" + str + "]");
+    }
+}
+
+class Calculater{
+    public static int expressionParser(String expression){
+        //ここから書きましょう
+        Stack operandStack = new Stack();
+        Stack operatorStack = new Stack();
+
+        for(int i = 0; i < expression.length(); i++){
+            //演算子の時
+            if(isOperator(expression.charAt(i))){
+                String operator = "" + expression.charAt(i);
+                if(operatorStack.peek() == null || operator.equals("(") || operatorStack.peek().equals("(")){
+                    operatorStack.push(operator);
+                }else if(operator.equals(")")){
+                    while(!operatorStack.peek().equals("(")){
+                        calculate(operandStack, operatorStack.pop());
+                    }
+                    operatorStack.pop(); //「(」を捨てる
+                }else if(getOperatorPriority(operator) > getOperatorPriority(operatorStack.peek())){
+                    operatorStack.push(operator);
+                }else if(getOperatorPriority(operator) == getOperatorPriority(operatorStack.peek())){
+                    calculate(operandStack, operatorStack.pop());
+                    operatorStack.push(operator);
+                }
+                else if(getOperatorPriority(operator) < getOperatorPriority(operatorStack.peek())){
+                    while(operatorStack.peek() != null && !operatorStack.peek().equals("(")){
+                        calculate(operandStack, operatorStack.pop());
+                    }
+                    operatorStack.push(operator);
+                }
+            }
+            //オペランドの時
+            else{
+                String operand = "";
+                while(i < expression.length() && !isOperator(expression.charAt(i))){
+                    operand += expression.charAt(i);
+                    i++;
+                }
+                i--;
+                operandStack.push(operand);
+            }
+        }
+        
+        //読み込み完了後の処理
+        while(operatorStack.peek() != null){
+            calculate(operandStack, operatorStack.pop());
+        }
+
+        return Integer.parseInt(operandStack.pop());
+    } 
+
+    //演算子の優先順位を獲得
+    public static int getOperatorPriority(String operator){
+        if(operator.equals("(") || operator.equals(")")) return 4;
+        else if(operator.equals("*") || operator.equals("/")) return 3;
+        else if(operator.equals("+") || operator.equals("-")) return 2;
+        else if(operator.equals("^")) return 1;
+        else return 0;
+    }
+
+    //演算子を判定
+    public static boolean isOperator(char c){
+        return c == '^' || c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')';
+    }
+
+    //計算してスタックに追加
+    public static void calculate(Stack operandStack, String operator){
+        int result = 0;
+        int operand2 = Integer.parseInt(operandStack.pop());
+        int operand1 = Integer.parseInt(operandStack.pop());
+    
+        switch(operator){
+            case "+":
+                result = operand1 + operand2; break;
+            case "-":
+                result = operand1 - operand2; break;
+            case "*":
+                result = operand1 * operand2; break;
+            case "/":
+                result = operand1 / operand2; break;
+            case "^":
+                result = operand1 ^ operand2; break;
+        }
+
+        operandStack.push(String.valueOf(result));
+    }
+}
+
+class Main{
+    public static void main(String[] args){
+        String expression = "(100+200)/(3*(60^100))+1000/10";
+        System.out.println(expression + " = " + Calculater.expressionParser(expression));
+    }
+}
+
+// expressionParser("2+4*6") // 26
+// expressionParser("2*3+4") // 10
+// expressionParser("3*3/3*3*3") // 27
+// expressionParser("1+2+3+4+5+6+7+8+9+10") // 55
+// expressionParser("1+2*5/3+6/4*2") // 6
+// expressionParser("42") // 42
+// expressionParser("(100+300)*5+(20-10)/10") // 2001
+// expressionParser("(100+200)/3*100+1000/10") // 10100
